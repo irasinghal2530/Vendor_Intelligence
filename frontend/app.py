@@ -295,12 +295,12 @@ from dotenv import load_dotenv
 # Load env vars
 load_dotenv()
 
-BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
+BACKEND_URL = os.getenv("BACKEND_URL")
 
-if "0.0.0.0" in BACKEND_URL:
-    raise RuntimeError(
-        "BACKEND_URL cannot be 0.0.0.0 — use localhost or a real hostname"
-    )
+# if "0.0.0.0" in BACKEND_URL:
+#     raise RuntimeError(
+#         "BACKEND_URL cannot be 0.0.0.0 — use localhost or a real hostname"
+#     )
 
 # Ensure backend is reachable
 try:
