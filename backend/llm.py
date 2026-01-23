@@ -106,22 +106,19 @@
 #     return response.choices[0].message.content.strip()
 
 
-
-from dotenv import load_dotenv
-load_dotenv()  # MUST be first
-
+##llm.py
 import os
 import json
 from openai import OpenAI
 from backend.decision_lens import VENDOR_SELECTION_LENS  
 
-# 🔴 Fail fast if key is missing
-if not os.getenv("OPENAI_API_KEY"):
-    raise RuntimeError("OPENAI_API_KEY not found in environment")
+def _check_openai_key():
+    if not os.getenv("OPENAI_API_KEY"):
+        raise RuntimeError("OPENAI_API_KEY not found in environment")
 
-# 🔴 Client must exist at module level
+_check_openai_key()
+
 client = OpenAI()
-
 SYSTEM_PROMPT = """
 You are a decision intelligence assistant.
 
