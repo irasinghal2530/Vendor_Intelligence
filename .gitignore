@@ -1,0 +1,31 @@
+# Security
+.env
+*.key
+*.pem
+
+# Dependencies
+node_modules/
+venv/
+.venv/
+bin/
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+
+# Logs and Build
+*.log
+dist/
+build/
+out/
+
+# Ignore all log files
+*.log
+
+# BUT do not ignore this specific log file
+!important_system.log

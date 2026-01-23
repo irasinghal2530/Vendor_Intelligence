@@ -1,0 +1,5 @@
+Vendor_Name,Component_Name,Unit_Price,Lead_Time_Days,Quality_Score,Compliance_Status
+Vendor_Alpha,Turbine_Blade,450.00,14,95,ISO9001
+Vendor_Beta,Turbine_Blade,435.00,18,,ISO9001
+Vendor_Gamma,Turbine_Blade,460.00,10,98,AS9100
+Vendor_Delta,Turbine_Blade,420.00,21,,Pending

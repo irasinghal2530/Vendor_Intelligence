@@ -1,0 +1,5 @@
+Vendor_Name,Component_Name,Unit_Price,Lead_Time_Days,Quality_Score,Compliance_Status
+Vendor_Alpha,Control_Unit,1200.00,45,92,ISO9001
+Vendor_Beta,Control_Unit,1150.00,60,90,ISO9001
+Vendor_Gamma,Control_Unit,1400.00,10,96,AS9100
+Vendor_Epsilon,Control_Unit,1100.00,90,88,ISO9001

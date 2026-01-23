@@ -1,0 +1,5 @@
+Vendor_Name,Component_Name,Unit_Price,Lead_Time_Days,Quality_Score,Compliance_Status
+Vendor_Alpha,Fastener_Bulk,10.00,5,98,ISO9001
+Vendor_Beta,Fastener_Bulk,10.15,6,98,ISO9001
+Vendor_Gamma,Fastener_Bulk,10.28,4,99,ISO9001
+Vendor_Zeta,Fastener_Bulk,9.90,7,97,ISO9001
