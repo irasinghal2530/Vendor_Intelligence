@@ -10,18 +10,22 @@ load_dotenv()
 
 from backend.decision_lens import VENDOR_SELECTION_LENS  
 
-def _check_gemini_key():
-    if not os.getenv("GEMINI_API_KEY"):
-        raise RuntimeError("GEMINI_API_KEY not found in environment. Please check your .env file.")
+def _get_gemini_client() -> genai.Client | None:
+    """
+    Create a Gemini client only when a key exists.
 
-_check_gemini_key()
-
-# Configure the Gemini API using the new google-genai SDK
-client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+    IMPORTANT: Do not raise at import time. The backend should be able to start
+    even if GEMINI_API_KEY isn't configured (endpoints will return a clear error).
+    """
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        return None
+    return genai.Client(api_key=api_key)
 
 # Note: Using gemini-2.0-flash or gemini-1.5-flash as gemini-3 is not a released model.
 # I will use gemini-2.0-flash as it is the most modern stable version.
-MODEL_ID = "gemini-2.0-flash"
+# MODEL_ID = "gemini-2.0-flash"
+MODEL_ID = "gemini-2.5-flash"
 
 SYSTEM_PROMPT = """
 You are a decision intelligence assistant.
@@ -70,6 +74,16 @@ VERIFIED FACTS:
 DOCUMENT CONTEXT:
 {json.dumps(summaries, indent=2)}
 """
+
+    client = _get_gemini_client()
+    if client is None:
+        return {
+            "insights": ["LLM is not configured (missing GEMINI_API_KEY)."],
+            "assumptions": [],
+            "missing_information": ["Set GEMINI_API_KEY in your environment or .env file."],
+            "risks": ["Analysis was generated without calling the LLM."],
+            "tradeoffs": []
+        }
 
     response = client.models.generate_content(
         model=MODEL_ID,
@@ -120,6 +134,13 @@ Rules:
 - DO NOT recommend actions
 - DO NOT choose vendors
 """
+
+    client = _get_gemini_client()
+    if client is None:
+        return (
+            "LLM is not configured (missing GEMINI_API_KEY). "
+            "Set GEMINI_API_KEY in your environment or .env file, then restart the backend."
+        )
 
     response = client.models.generate_content(
         model=MODEL_ID,

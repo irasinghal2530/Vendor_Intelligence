@@ -1,0 +1,22 @@
+decision-intelligence/
+│
+├── backend/
+│   ├── server.js
+│   ├── analyze.js
+│   ├── claude.js
+│   ├── package.json
+│
+├── frontend/
+│   ├── src/
+│   │   ├── App.jsx
+│   │   ├── FileUpload.jsx
+│   │   ├── Results.jsx
+│   │   ├── Chat.jsx
+│   │   ├── api.js
+│   │   └── index.js
+│   ├── package.json
+│
+├── sample-data/
+│   └── vendor-quotes.csv
+│
+└── README.md

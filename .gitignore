@@ -9,6 +9,10 @@ venv/
 .venv/
 bin/
 
+# Python bytecode / caches
+__pycache__/
+*.pyc
+
 # OS Files
 .DS_Store
 Thumbs.db
