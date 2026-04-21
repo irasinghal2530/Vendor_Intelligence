@@ -6,9 +6,16 @@ if (-not (Test-Path ".\.venv")) {
   python -m venv .venv
 }
 
-. .\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-pip install -r requirements.txt
+$venvPy = Join-Path (Get-Location) ".venv\Scripts\python.exe"
+if (-not (Test-Path $venvPy)) {
+  Write-Error "Expected venv python at $venvPy"
+}
+
+# Broken venvs sometimes ship without pip; ensurepip installs it into the venv only.
+& $venvPy -m ensurepip --upgrade 2>$null
+
+& $venvPy -m pip install --upgrade pip
+& $venvPy -m pip install -r requirements.txt
 
 Write-Host ""
 Write-Host "Setup complete."

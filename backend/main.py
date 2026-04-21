@@ -7,9 +7,6 @@ from fastapi import FastAPI, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
 
-from backend.analyze import analyze_files
-from backend.llm import chat_reply
-
 app = FastAPI()
 
 app.add_middleware(
@@ -34,6 +31,9 @@ def health():
 
 @app.post("/analyze")
 async def analyze(files: list[UploadFile] = File(...)):
+    # Lazy import to keep backend startup fast.
+    from backend.analyze import analyze_files
+
     return await analyze_files(files)
 
 
@@ -44,6 +44,9 @@ async def chat(data: dict):
 
     if not context:
         return {"reply": "No analysis context provided."}
+
+    # Lazy import to keep backend startup fast.
+    from backend.llm import chat_reply
 
     reply = await chat_reply(question, context)
     return {"reply": reply}

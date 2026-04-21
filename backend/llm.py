@@ -1,153 +1,237 @@
-##llm.py
-import os
 import json
-from google import genai
-from google.genai import types
+import os
+import re
+import time
+
 from dotenv import load_dotenv
 
-# Load environment variables at the very beginning
 load_dotenv()
 
-from backend.decision_lens import VENDOR_SELECTION_LENS  
+from backend.decision_lens import VENDOR_SELECTION_LENS
 
-def _get_gemini_client() -> genai.Client | None:
-    """
-    Create a Gemini client only when a key exists.
 
-    IMPORTANT: Do not raise at import time. The backend should be able to start
-    even if GEMINI_API_KEY isn't configured (endpoints will return a clear error).
-    """
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3-vl:235b-instruct-cloud")
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+
+_THINK_TAG_RE = re.compile(r"<think>.*?</think>", re.DOTALL)
+
+
+def _strip_thinking(text: str) -> str:
+    """Remove Qwen3-style <think>…</think> blocks from model output."""
+    return _THINK_TAG_RE.sub("", text).strip()
+
+
+def _get_ollama_client():
+    """Return an ollama.Client instance pointed at the configured base URL."""
+    try:
+        import ollama
+        client = ollama.Client(host=OLLAMA_BASE_URL)
+        print(f"[LLM] Ollama client created OK (base_url={OLLAMA_BASE_URL})")
+        return client
+    except Exception as e:
+        print(f"[LLM] Failed to create Ollama client: {type(e).__name__}: {e}")
         return None
-    return genai.Client(api_key=api_key)
 
-# Note: Using gemini-2.0-flash or gemini-1.5-flash as gemini-3 is not a released model.
-# I will use gemini-2.0-flash as it is the most modern stable version.
-# MODEL_ID = "gemini-2.0-flash"
-MODEL_ID = "gemini-2.5-flash"
 
-SYSTEM_PROMPT = """
-You are a decision intelligence assistant.
-You help users think clearly about trade-offs, risks, and assumptions.
-You NEVER recommend actions or make decisions.
-"""
+_FALLBACK_ANALYSIS = {
+    "insights": ["Analysis could not be completed — the AI service is temporarily unavailable. "
+                  "The extracted facts and document summaries below are still valid."],
+    "assumptions": ["AI-generated assumptions are unavailable for this run."],
+    "missing_information": ["Re-run the analysis when the Ollama service is reachable."],
+    "risks": ["AI risk analysis unavailable — review the raw facts manually."],
+    "tradeoffs": []
+}
+
+
+def _compact_facts(facts: list, max_facts: int = 50) -> list:
+    compact = []
+    for f in facts[:max_facts]:
+        compact.append({
+            "vendor": f.get("entity_name", ""),
+            "attr": f.get("attribute", ""),
+            "val": f.get("value", "")
+        })
+    return compact
+
+
+def _compact_summaries(summaries: list) -> list:
+    compact = []
+    for s in summaries:
+        entry = {"file": s.get("filename", ""), "type": s.get("type", "")}
+        if s.get("type") == "pdf":
+            preview = s.get("text_preview", "")[:800]
+            if preview:
+                entry["preview"] = preview
+        elif s.get("columns"):
+            entry["cols"] = s.get("columns", [])[:10]
+            entry["rows"] = s.get("rows", 0)
+        compact.append(entry)
+    return compact
+
+
+def _extract_text(item):
+    if isinstance(item, dict):
+        return next(iter(item.values()), "")
+    return str(item)
+
+
+def _call_ollama_with_retry(client, model: str, prompt: str, max_retries: int = 3, **chat_kwargs):
+    """Call Ollama chat API with exponential backoff on transient errors."""
+    last_err = None
+    for attempt in range(max_retries):
+        try:
+            response = client.chat(
+                model=model,
+                messages=[{"role": "user", "content": prompt}],
+                **chat_kwargs
+            )
+            return response
+        except Exception as e:
+            last_err = e
+            err_str = str(e).lower()
+            is_retryable = any(k in err_str for k in ("connection", "timeout", "503", "429"))
+            if is_retryable and attempt < max_retries - 1:
+                wait = 2 ** attempt + 1
+                print(f"Ollama request failed (attempt {attempt+1}/{max_retries}), retrying in {wait}s... [{e}]")
+                time.sleep(wait)
+            else:
+                raise last_err
+
 
 async def call_llm(summaries, facts):
-    prompt = f"""
-{SYSTEM_PROMPT}
+    compact_facts = _compact_facts(facts)
+    compact_summaries = _compact_summaries(summaries)
 
-You are analyzing vendor and procurement information.
+    lens_excerpt = json.dumps(VENDOR_SELECTION_LENS, indent=None)[:500]
 
-DECISION LENS (how this company evaluates vendors):
-{VENDOR_SELECTION_LENS}
+    prompt = f"""/no_think
+You are a senior procurement analyst. You have been given vendor data and a decision lens.
+Your job is to analyze the data and produce SUBSTANTIVE findings.
 
-IMPORTANT:
-- VERIFIED FACTS are programmatically extracted and should be trusted
-- DOCUMENT CONTEXT provides background and nuance only
-- If facts and documents conflict, prefer FACTS
+=== DECISION LENS (evaluation framework) ===
+{lens_excerpt}
 
-YOUR TASK:
-- Use the decision lens to interpret the facts
-- Give clear, short and crisp insights
-- Do not use words like "point" ot "bullet" while starting any insight
-- Surface implicit assumptions
-- Highlight missing or weak information
-- Explain risks and trade-offs
-- Do NOT recommend vendors
-- Do NOT rank vendors
-- Do NOT suggest negotiation tactics
+=== EXTRACTED FACTS (from uploaded documents — treat as ground truth) ===
+{json.dumps(compact_facts, indent=1)}
 
-Return ONLY VALID JSON exactly in this format:
+=== DOCUMENT SUMMARIES ===
+{json.dumps(compact_summaries, indent=1)}
 
-{{
-  "insights": [],
-  "assumptions": [],
-  "missing_information": [],
-  "risks": [],
-  "tradeoffs": []
-}}
+=== YOUR TASK ===
+Analyze the facts and documents above. Produce DETAILED findings in each category:
 
-VERIFIED FACTS:
-{json.dumps(facts, indent=2)}
+1. **insights**: Key observations from the data. Compare vendors on price, quality, support, uptime, or any metrics present. Note patterns, outliers, and notable differences. Minimum 3 insights.
+2. **assumptions**: What is being assumed but not proven by the data? E.g. "Quality parity is assumed because no defect data was provided." Minimum 2 assumptions.
+3. **missing_information**: What data gaps exist? What additional information would strengthen the analysis? Minimum 2 items.
+4. **risks**: What could go wrong? Consider single-source dependency, price volatility, compliance gaps, etc. Minimum 2 risks.
+5. **tradeoffs**: What tensions exist between competing factors (e.g. lower price vs lower support score)? Minimum 1 tradeoff.
 
-DOCUMENT CONTEXT:
-{json.dumps(summaries, indent=2)}
-"""
+=== RULES ===
+- Each array entry must be a plain string (not an object).
+- Do NOT make recommendations or rank vendors.
+- Do NOT return empty arrays — every category must have at least one substantive entry.
+- Be specific: reference actual vendor names and numbers from the facts.
 
-    client = _get_gemini_client()
+Return ONLY valid JSON in this exact structure:
+{{"insights":["...","..."],"assumptions":["...","..."],"missing_information":["...","..."],"risks":["...","..."],"tradeoffs":["..."]}}"""
+
+    client = _get_ollama_client()
     if client is None:
         return {
-            "insights": ["LLM is not configured (missing GEMINI_API_KEY)."],
+            "insights": ["LLM not configured — install the 'ollama' package and ensure Ollama is running."],
             "assumptions": [],
-            "missing_information": ["Set GEMINI_API_KEY in your environment or .env file."],
-            "risks": ["Analysis was generated without calling the LLM."],
+            "missing_information": [
+                "Run: pip install ollama",
+                f"Then start Ollama and pull the model: ollama pull {OLLAMA_MODEL}"
+            ],
+            "risks": ["Analysis generated without LLM."],
             "tradeoffs": []
         }
-
-    response = client.models.generate_content(
-        model=MODEL_ID,
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            response_mime_type="application/json",
-            temperature=0.2
-        )
-    )
-
-    raw = response.text.strip()
 
     try:
-        return json.loads(raw)
+        response = _call_ollama_with_retry(
+            client,
+            OLLAMA_MODEL,
+            prompt,
+            options={"temperature": 0.2, "num_predict": 4000},
+            format="json"
+        )
+    except Exception as e:
+        print(f"LLM call failed after retries: {type(e).__name__}: {e}")
+        fallback = dict(_FALLBACK_ANALYSIS)
+        fallback["insights"] = [f"LLM call failed: {e}"] + fallback["insights"]
+        return fallback
+
+    raw_text = _strip_thinking(response.message.content)
+    try:
+        parsed = json.loads(raw_text)
+        empty_keys = [k for k in ("insights", "assumptions", "missing_information", "risks", "tradeoffs")
+                      if not parsed.get(k)]
+        if empty_keys:
+            print(f"[LLM] Warning: empty sections in response: {empty_keys}")
+        return parsed
     except Exception:
-        print("⚠️ RAW LLM OUTPUT:\n", raw)
+        json_match = re.search(r"\{.*\}", raw_text, re.DOTALL)
+        if json_match:
+            try:
+                parsed = json.loads(json_match.group())
+                return parsed
+            except Exception:
+                pass
+        print(f"[LLM] JSON parse failed. Raw output:\n{raw_text[:500]}")
         return {
-            "insights": ["Analysis formatting error"],
-            "assumptions": ["LLM response could not be parsed cleanly"],
+            "insights": ["The AI returned a malformed response. Please re-run the analysis."],
+            "assumptions": [],
             "missing_information": [],
-            "risks": ["Analysis incomplete due to formatting issue"],
+            "risks": ["Analysis may be incomplete due to a formatting error."],
             "tradeoffs": []
         }
 
+
 async def chat_reply(question, context):
-    prompt = f"""
-{SYSTEM_PROMPT}
+    compact_ctx = {
+        "facts": _compact_facts(context.get("facts", []), 20),
+        "insights": [_extract_text(i) for i in context.get("insights", [])[:3]],
+        "risks": [_extract_text(r) for r in context.get("risks", [])[:3]],
+        "assumptions": [_extract_text(a) for a in context.get("assumptions", [])[:3]],
+        "tradeoffs": [_extract_text(t) for t in context.get("tradeoffs", [])[:3]],
+    }
 
-Context (do not repeat verbatim):
-{json.dumps(context, indent=2)}
+    prompt = f"""/no_think
+You are a friendly, conversational vendor analysis assistant named "Decision Intelligence Assistant".
+You help a procurement team explore their uploaded vendor data.
 
-User question:
-"{question}"
+=== HOW TO BEHAVE ===
+- If the user sends a greeting (e.g. "hello", "hi", "hey", "good morning"), respond warmly and briefly introduce what you can help with. For example: "Hey! I've got your vendor data loaded. You can ask me about risks, pricing comparisons, trade-offs, or anything else you'd like to explore."
+- If the user asks a casual or off-topic question, respond politely and steer them back to what you can help with.
+- If the user asks a question about the vendor data, answer using the context below.
+- Match the user's tone — be conversational and natural, not robotic.
 
-RULES:
-You are a Decision Intelligence Assistant.
+=== VENDOR DATA CONTEXT ===
+{json.dumps(compact_ctx, separators=(',', ':'))}
 
-Rules:
-- Assume the user already knows your role
-- Respond directly to the user’s question
-- If the question is vague, ask ONE clarifying question
-- Be concise and structured
-- Never recommend vendors or rank them
-- Respond in plain English paragraphs
-- Ask thoughtful questions when helpful
-- Explain trade-offs, risks, and assumptions
-- DO NOT use JSON
-- DO NOT recommend actions
-- DO NOT choose vendors
-"""
+=== USER MESSAGE ===
+{question}
 
-    client = _get_gemini_client()
+=== RESPONSE RULES (only when answering data questions) ===
+- Use 3-5 concise bullet points with plain, readable English.
+- Reference specific vendor names and values where relevant.
+- Do NOT recommend or rank vendors.
+- Do NOT dump raw numbers without explanation.
+- Keep your answer under 200 words."""
+
+    client = _get_ollama_client()
     if client is None:
-        return (
-            "LLM is not configured (missing GEMINI_API_KEY). "
-            "Set GEMINI_API_KEY in your environment or .env file, then restart the backend."
-        )
+        return "LLM not configured. Install the 'ollama' package and ensure Ollama is running."
 
-    response = client.models.generate_content(
-        model=MODEL_ID,
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            temperature=0.4
+    try:
+        response = _call_ollama_with_retry(
+            client,
+            OLLAMA_MODEL,
+            prompt,
+            options={"temperature": 0.3, "num_predict": 600}
         )
-    )
-
-    return response.text.strip()
+        return _strip_thinking(response.message.content)
+    except Exception as e:
+        print(f"Chat LLM call failed: {type(e).__name__}: {e}")
+        return f"AI service error: {e}. Please ensure Ollama is running and the model '{OLLAMA_MODEL}' is accessible."

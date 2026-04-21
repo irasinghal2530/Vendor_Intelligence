@@ -20,11 +20,12 @@ fi
 
 # 2. Check for .env file
 if [ ! -f "$ENV_FILE" ]; then
-    echo "⚠️ Warning: .env file not found. Please create it with necessary API keys."
-    echo "Required: GEMINI_API_KEY"
+    echo "⚠️ Warning: .env file not found. Please create it with Ollama settings."
+    echo "Required: Ollama reachable at OLLAMA_BASE_URL; model pulled (OLLAMA_MODEL)."
     echo "Optional: PORT, BACKEND_URL"
-    # Create a template if it doesn't exist
-    echo "GEMINI_API_KEY=" > .env.template
+    # Create a template if it doesn't exist (OLLAMA_BASE_URL for Docker backend + Ollama on host)
+    echo "OLLAMA_MODEL=qwen3-vl:235b-instruct-cloud" > .env.template
+    echo "OLLAMA_BASE_URL=http://host.docker.internal:11434" >> .env.template
     echo "PORT=8000" >> .env.template
     echo "BACKEND_URL=http://backend:8000" >> .env.template
 fi

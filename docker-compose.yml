@@ -9,8 +9,9 @@ services:
       - "8000:8000"
     env_file:
       - .env
-    environment:
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    # LLM: backend uses Ollama (see OLLAMA_MODEL / OLLAMA_BASE_URL in .env).
+    # If the backend runs in Docker but Ollama runs on the host, set
+    # OLLAMA_BASE_URL=http://host.docker.internal:11434 (Docker Desktop) or the host gateway on Linux.
     restart: unless-stopped
     
   frontend:
