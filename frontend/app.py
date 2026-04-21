@@ -33,17 +33,24 @@ st.markdown("""
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
+    /* Constrain main content width for readability on ultra-wide screens */
+    .block-container {
+        max-width: 1200px;
+        padding-left: 2rem;
+        padding-right: 2rem;
+    }
+
     .main-header {
         background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-        padding: 2rem 2.5rem;
-        border-radius: 16px;
-        margin-bottom: 2rem;
+        padding: 1.25rem 1.5rem;
+        border-radius: 12px;
+        margin-bottom: 1.25rem;
         box-shadow: 0 4px 20px rgba(79, 70, 229, 0.2);
     }
 
     .main-header h1 {
         color: white;
-        font-size: 2.25rem;
+        font-size: 1.5rem;
         font-weight: 700;
         margin: 0;
         letter-spacing: -0.02em;
@@ -51,17 +58,18 @@ st.markdown("""
 
     .main-header p {
         color: rgba(255,255,255,0.9);
-        font-size: 1rem;
-        margin: 0.5rem 0 0 0;
+        font-size: 0.85rem;
+        margin: 0.25rem 0 0 0;
     }
 
     .metric-card {
         background: #ffffff;
         border: 1px solid #e5e7eb;
-        border-radius: 14px;
-        padding: 1.5rem;
+        border-radius: 12px;
+        padding: 1rem 1.25rem;
         transition: all 0.3s ease;
         box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        text-align: center;
     }
 
     .metric-card:hover {
@@ -70,77 +78,73 @@ st.markdown("""
     }
 
     .metric-value {
-        font-size: 2.5rem;
+        font-size: 1.75rem;
         font-weight: 700;
         color: #4f46e5;
+        line-height: 1.2;
     }
 
     .metric-label {
         color: #6b7280;
-        font-size: 0.875rem;
+        font-size: 0.75rem;
         font-weight: 500;
         text-transform: uppercase;
         letter-spacing: 0.05em;
+        margin-top: 0.25rem;
+    }
+
+    .insight-card, .assumption-card, .risk-card, .gap-card, .tradeoff-card {
+        border-radius: 0 8px 8px 0;
+        padding: 0.85rem 1rem;
+        margin: 0.5rem 0;
     }
 
     .insight-card {
         background: #eff6ff;
         border-left: 4px solid #3b82f6;
-        border-radius: 0 10px 10px 0;
-        padding: 1.25rem 1.5rem;
-        margin: 0.75rem 0;
     }
 
     .assumption-card {
         background: #fffbeb;
         border-left: 4px solid #f59e0b;
-        border-radius: 0 10px 10px 0;
-        padding: 1.25rem 1.5rem;
-        margin: 0.75rem 0;
     }
 
     .risk-card {
         background: #fef2f2;
         border-left: 4px solid #ef4444;
-        border-radius: 0 10px 10px 0;
-        padding: 1.25rem 1.5rem;
-        margin: 0.75rem 0;
     }
 
     .gap-card {
         background: #faf5ff;
         border-left: 4px solid #a855f7;
-        border-radius: 0 10px 10px 0;
-        padding: 1.25rem 1.5rem;
-        margin: 0.75rem 0;
     }
 
     .tradeoff-card {
         background: #ecfdf5;
         border-left: 4px solid #10b981;
-        border-radius: 0 10px 10px 0;
-        padding: 1.25rem 1.5rem;
-        margin: 0.75rem 0;
     }
 
     .card-text {
         color: #1f2937;
-        font-size: 0.95rem;
-        line-height: 1.6;
+        font-size: 0.875rem;
+        line-height: 1.5;
         margin: 0;
     }
 
     .stTabs [data-baseweb="tab-list"] {
-        gap: 4px;
+        gap: 2px;
         background: #f3f4f6;
-        padding: 6px;
-        border-radius: 10px;
+        padding: 4px;
+        border-radius: 8px;
+        flex-wrap: wrap;
     }
 
     .stTabs [data-baseweb="tab"] {
-        border-radius: 8px;
-        padding: 10px 18px;
+        border-radius: 6px;
+        padding: 8px 12px;
         font-weight: 500;
+        font-size: 0.85rem;
+        white-space: nowrap;
     }
 
     .stTabs [aria-selected="true"] {
@@ -148,14 +152,19 @@ st.markdown("""
         color: white !important;
     }
 
+    section[data-testid="stSidebar"] {
+        width: 280px !important;
+    }
+
     section[data-testid="stSidebar"] .stButton > button {
         width: 100%;
         background: #4f46e5;
         color: white;
         border: none;
-        border-radius: 10px;
-        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        padding: 0.6rem 1rem;
         font-weight: 600;
+        font-size: 0.85rem;
         transition: all 0.2s ease;
     }
 
@@ -171,43 +180,44 @@ st.markdown("""
     [data-testid="stFileUploader"] {
         background: #f5f3ff;
         border: 2px dashed #c4b5fd;
-        border-radius: 12px;
-        padding: 1rem;
+        border-radius: 10px;
+        padding: 0.75rem;
     }
 
     .section-header {
         display: flex;
         align-items: center;
-        gap: 12px;
-        margin-bottom: 1.5rem;
-        padding-bottom: 1rem;
+        gap: 10px;
+        margin-bottom: 1rem;
+        padding-bottom: 0.75rem;
         border-bottom: 1px solid #e5e7eb;
     }
 
     .section-header h2 {
         margin: 0;
-        font-size: 1.5rem;
+        font-size: 1.15rem;
         font-weight: 600;
         color: #111827;
     }
 
     .section-icon {
-        width: 40px;
-        height: 40px;
-        border-radius: 10px;
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.25rem;
+        font-size: 1rem;
+        flex-shrink: 0;
     }
 
     .stChatMessage {
-        border-radius: 12px;
+        border-radius: 10px;
         border: 1px solid #e5e7eb;
     }
 
     .stDataFrame {
-        border-radius: 12px;
+        border-radius: 10px;
         overflow: hidden;
     }
 
@@ -226,8 +236,28 @@ st.markdown("""
     footer {visibility: hidden;}
 
     .js-plotly-plot {
-        border-radius: 12px;
+        border-radius: 10px;
         overflow: hidden;
+    }
+
+    /* Responsive adjustments for smaller viewports */
+    @media (max-width: 768px) {
+        .block-container {
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+        .main-header {
+            padding: 1rem;
+        }
+        .main-header h1 {
+            font-size: 1.25rem;
+        }
+        .metric-value {
+            font-size: 1.4rem;
+        }
+        .metric-card {
+            padding: 0.75rem;
+        }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -239,12 +269,13 @@ st.session_state.setdefault("analysis_in_flight", False)
 st.session_state.setdefault("chat_in_flight", False)
 
 # ── Header ──
-st.markdown("""
-<div class="main-header">
-    <h1>🎯 Vendor Decision Intelligence</h1>
-    <p>Surface facts, assumptions, risks, and trade-offs — without recommendations</p>
-</div>
-""", unsafe_allow_html=True)
+st.markdown(
+    '<div class="main-header">'
+    '<h1>🎯 Vendor Decision Intelligence</h1>'
+    '<p>Surface facts, assumptions, risks, and trade-offs — without recommendations</p>'
+    '</div>',
+    unsafe_allow_html=True
+)
 
 # ── Sidebar ──
 with st.sidebar:
@@ -336,12 +367,10 @@ with st.sidebar:
 
 # ── Landing page ──
 if not st.session_state.analysis:
-    st.markdown("")
-    _left, _center, _right = st.columns([1, 3, 1])
+    _left, _center, _right = st.columns([1, 4, 1])
     with _center:
         st.markdown("### Welcome to Decision Intelligence")
         st.caption("Transform vendor documents into actionable insights")
-        st.markdown("")
         steps = {
             "📁  **Upload Documents**": "CSV, Excel, or PDF vendor files",
             "🔍  **Extract Facts**": "AI identifies key data points",
@@ -350,7 +379,6 @@ if not st.session_state.analysis:
         }
         for title, desc in steps.items():
             st.markdown(f"{title}  \n{desc}")
-        st.markdown("")
         st.info("Upload files in the sidebar and click **Analyze** to get started.")
     st.stop()
 
@@ -404,8 +432,9 @@ def _base_layout(**overrides):
     base = dict(
         paper_bgcolor='#ffffff',
         plot_bgcolor='#ffffff',
-        font=dict(family='Inter, sans-serif', color='#1f2937'),
-        margin=dict(t=60, b=60, l=60, r=30),
+        font=dict(family='Inter, sans-serif', color='#1f2937', size=12),
+        margin=dict(t=50, b=50, l=50, r=20),
+        height=380,
     )
     base.update(overrides)
     return base
@@ -435,20 +464,19 @@ def create_bar_chart(df, attribute: str):
     nice_title = attribute.replace('_', ' ').title()
     fig.update_layout(**_base_layout(
         title=dict(text=f"<b>{nice_title}</b> by Vendor",
-                   font=dict(size=18, color='#111827')),
+                   font=dict(size=15, color='#111827')),
         xaxis=dict(
             title='',
             gridcolor='#f3f4f6',
             linecolor='#e5e7eb',
-            tickfont=dict(color='#374151', size=12),
+            tickfont=dict(color='#374151', size=11),
         ),
         yaxis=dict(
-            title=dict(text=nice_title, font=dict(color='#6b7280', size=13)),
+            title=dict(text=nice_title, font=dict(color='#6b7280', size=12)),
             gridcolor='#f3f4f6',
             linecolor='#e5e7eb',
-            tickfont=dict(color='#374151', size=12),
+            tickfont=dict(color='#374151', size=11),
         ),
-        margin=dict(t=80, b=60, l=80, r=40),
         showlegend=False,
         bargap=0.3,
     ))
@@ -482,16 +510,16 @@ def create_grouped_bar(df):
 
     fig.update_layout(**_base_layout(
         title=dict(text="<b>All Metrics</b> by Vendor",
-                   font=dict(size=18, color='#111827')),
+                   font=dict(size=15, color='#111827')),
         barmode='group',
-        xaxis=dict(tickfont=dict(color='#374151', size=12),
+        xaxis=dict(tickfont=dict(color='#374151', size=11),
                    gridcolor='#f3f4f6'),
-        yaxis=dict(tickfont=dict(color='#374151', size=12),
+        yaxis=dict(tickfont=dict(color='#374151', size=11),
                    gridcolor='#f3f4f6'),
-        legend=dict(font=dict(color='#374151', size=11),
-                    orientation='h', yanchor='bottom', y=-0.25,
+        legend=dict(font=dict(color='#374151', size=10),
+                    orientation='h', yanchor='bottom', y=-0.2,
                     xanchor='center', x=0.5),
-        margin=dict(t=80, b=80, l=80, r=40),
+        margin=dict(t=50, b=70, l=60, r=20),
         bargap=0.25,
         bargroupgap=0.1,
     ))
@@ -552,7 +580,7 @@ with tabs[0]:
         </div>
         """, unsafe_allow_html=True)
 
-    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("")
 
     df = _facts_df(facts)
     attrs = _numeric_attributes(df)
@@ -755,9 +783,11 @@ with tabs[5]:
             "Compare the trade-offs between vendors",
             "Are there any compliance concerns?",
         ]
-        scols = st.columns(len(suggested))
+        row1 = st.columns(3)
+        row2 = st.columns(3)
         for idx, sq in enumerate(suggested):
-            with scols[idx]:
+            col = row1[idx] if idx < 3 else row2[idx - 3]
+            with col:
                 if st.button(sq, key=f"sq_{idx}", use_container_width=True):
                     st.session_state["_pending_question"] = sq
                     st.rerun()
